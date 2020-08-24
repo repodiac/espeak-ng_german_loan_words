@@ -7,9 +7,9 @@ The data comes from the German [Wiktionary](https://de.wiktionary.org/wiki/Wikti
 is automatically parsed. It contains [IPA codes](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) for these loan words which however are not
 directly usable with espeak-ng since it uses a "reduced" version in ASCII format, called [Kirshenbaum](https://en.wikipedia.org/wiki/Kirshenbaum).
 
-For these reasons, IPA codes are automatically converted into compatible espeak-ng encodings using the KirshenbaumMapper by external libray [ipapy](https://pypi.org/project/ipapy).
+For these reasons, IPA codes are automatically converted into compatible espeak-ng encodings using the KirshenbaumMapper by external library [ipapy](https://pypi.org/project/ipapy).
 
-As a result, an output file *de_extra* is generated which can be imported into espeak-ng directly.
+As a result, an output file `de_extra` is generated which can be imported into espeak-ng directly.
 
 ## Step-by-Step Tutorial
 
