@@ -21,13 +21,12 @@ docker build --rm -t espeak-ng_german_loan_words .
 
 It installs all programmatic files but does **NOT** download data at this point!
 
-**[2]** After successfully building the container you can run it any time by typing:
+**[2]** After successfully building the container you can run it any time by typing (**Please note**: You need to specify `<output_directory>` 
+where the output file is eventually placed on your local machine):
 
 ```
 docker run -u $(id -u):$(id -g) --rm -v <output_directory>:/wik_out espeak-ng_german_loan_words
 ```
-
-**Please note**: You need to specify `<output_directory>` where the output file is eventually placed on your local machine.
 
 This first downloads the most recent version of the German wiktionary, decompresses the file and
 starts parsing and generating the output file for the espeak-ng import later.
@@ -37,10 +36,10 @@ the speed of your CPU, decompressing and parsing/generating might also take a co
 
 **[3]** During parsing the XML data or converting IPA codes to espeak-ng encodings there might be
 some warnings or error messages from failing encodings. The process usually runs smoothly and all
-terms causing (possible) issues are logged to an extra tabular file, called *issue_terms.tab* which is to be
-found in the same ouput directory as file *de_extra*
+terms causing (possible) issues are logged to an extra tabular file, called `issue_terms.tab` which is to be
+found in the same ouput directory as file `de_extra`
 
-You can first of all ignore that file or use it to specifically filter the output file *de_extra*: If a term is
+You can first of all ignore that file or use it to specifically filter the output file `de_extra`: If a term is
 causing trouble but included in the output file the respective column *status* is set to *included*.
 Otherwise, if some term was not put into the output, it says *excluded*.
 
@@ -72,12 +71,12 @@ the espeak-ng encoding also for the cut and retry. This may work in a lot of cas
 
 ### Last Remark on Multiword Terms
 
-In case of multiword terms (i.e. terms/load words consisting of multiple words) there might be issues
+In case of multiword terms (i.e. terms/loan words consisting of multiple words) there might be issues
 with importing into espeak-ng. Sometimes espeak-ng shows strange behaviour because words are completely wrong or only partly correct.
 If this occurs, please check if those results might occur from importing multiword terms -- some fail while compiling/importing but some don't (see issue_terms.tab).
 Unfortunately this only shows up when actually using the words in a text in some cases. I don't have an explanation or solution here -- the
 only thing you can do is breaking those up into single words manually or removing them completely from the import file `de_extra`.
 
-# Bugs/Issues
+## Bugs/Issues
 
-Please let me know about any bugs or issues you encounter via filing github issues. Thanks.
+Please let me know by filing github issues about any bugs or issues you encounter. Thanks.
