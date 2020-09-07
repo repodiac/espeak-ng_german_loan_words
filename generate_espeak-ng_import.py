@@ -22,15 +22,12 @@ ATTRIBUTE_IPA = ':{{IPA}} {{Lautschrift|'
 # since full text is parsed, this global list of "has been processed already" of labels is used to prevent duplicates
 idx_list = set()
 
-def extract_loan_words(wiktionary_xml_file, break_up_multi_word_terms=True):
+def extract_loan_words(wiktionary_xml_file):
     """
     Given a valid XML file from Wiktionary, relevant loan words in German are extracted with their IPA code
     and word provenance (key=category_loan_word)
 
     :param wiktionary_xml_file: the input XML file from Wiktionary
-    :param break_up_multi_word_terms: True by default, breaks up loan words with more than one word since espeak-ng seems
-    to have trouble (i.e. it creates erroneous phonemic encodings!) to manage terms with more than one word in the
-    input file
 
     :return: list of dict with keys {'label, 'category_loan_word', 'IPA'} per loan word
     """
@@ -55,7 +52,11 @@ def extract_loan_words(wiktionary_xml_file, break_up_multi_word_terms=True):
             if category_loan_word_section_pos:
 
                 title = page.find('./wiktionary:title', NS)
-                label_list = title.text.split(' ')
+                # NOTE: we have to enforce lowercase since espeak-ng can only deal with lowercase terms to be imported,
+                # otherwise we need explicit flags for first capital letters (@capital),
+                # see https://github.com/espeak-ng/espeak-ng/blob/master/docs/dictionary.md#flags!
+                label_list = title.text.lower().split(' ')
+
                 category_loan_word = category_loan_word_section_pos.groups()[0][:-2].lower()
 
                 pronounciation_section_pos = REGEX_SECTION_LABEL_PRONOUNCIATION.search(raw_text)
@@ -67,33 +68,35 @@ def extract_loan_words(wiktionary_xml_file, break_up_multi_word_terms=True):
                         ipa_code_end = ipa_code_start + raw_text[ipa_code_start:].find('}}')
                         ipa_code = raw_text[ipa_code_start:ipa_code_end]
 
-                if break_up_multi_word_terms:
-                    ipa_code_list = ipa_code.split(' ') if ipa_code else []
-                    if len(ipa_code_list) == len(label_list):
-                        for ipa, label in zip(ipa_code_list, label_list):
-                            if label.lower() not in idx_list:
-                                idx_list.add(label.lower())
-                                term['label'] = label
-                                term['category_loan_word'] = category_loan_word
-                                term['IPA'] = ipa
-                                terms.append(term)
-                                term = {}
+                # espeak-ng allows up to 4 words as a term
+                if len(label_list) > 4:
+                    print('Multiword term detected -- Exceeds limit of 4 words, length =', len(label_list))
+                    print('   term =', ' '.join(label_list))
+                    print('   IPA codes =', ipa_code)
+                    print('-- EXCLUDING term!\n')
+                    # add multiword term to list for logging
+                    issue_terms.append([' '.join(label_list), ipa_code, 'excluded'])
+                    # skip to next term
+                    continue
 
-                        # continue with next term
-                        continue
-
-                    else:
-                        if len(ipa_code_list) > 0:
-
-                            print('Multiword term detected but number of single IPA codes is shorter than number of words:\n',
-                                  '   term =', ' '.join(label_list), '| IPA codes =', ' '.join(ipa_code_list),
-                                  '-- IGNORING (proceed as if were single term, instead.)\n')
-                            # add multiword term to list for logging
-                            issue_terms.append([label, ipa, 'included'])
-
+                ipa_code_list = ipa_code.split(' ') if ipa_code else []
                 label = ' '.join(label_list)
-                if label.lower() not in idx_list:
-                    idx_list.add(label.lower())
+                if len(label_list) > 1:
+
+                    if len(ipa_code_list) > 0 and len(ipa_code_list) < len(label_list):
+                        print('Multiword term detected -- Number of single IPA codes is shorter than number of words:')
+                        print('   term =', label)
+                        print('   IPA codes =', ipa_code)
+                        print('-- IGNORING (proceed as if were single word term, instead.)\n')
+                        # add multiword term to list for logging
+                        # Note: espeak-ng requires/recommends using '||' for word break betweeen phonemes
+                        issue_terms.append([label, '||'.join(ipa_code_list), 'included'])
+
+                    # espeak-ng requires brackets if the term consists of more than one word
+                    label = '(' + label + ')'
+
+                if label not in idx_list:
+                    idx_list.add(label)
                     term['label'] = label
                     term['category_loan_word'] = category_loan_word
                     term['IPA'] = ipa_code
@@ -158,6 +161,7 @@ def _espeak_code_corrections(espeak_code):
         .replace('<o>', '') \
         .replace('.', '') \
         .replace('E~', 'W') \
+        .replace(' ', '||') # espeak-ng requires/recommends using '||' for word break betweeen phonemes
 
 
 def convert_ipa_2_espeak_phoneme(ipa_code, correct_phonemes=True):
